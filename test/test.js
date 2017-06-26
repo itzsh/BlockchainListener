@@ -5,18 +5,23 @@ var http = require("http");
 //     console.log('This is a test.');
 // }, 1000);
 var post_data = {
-    channelId : 0
+    channelId:"ProdChannel1",
+    timeStart:"20170619000000",
+    timeEnd:"20170619160000",
+    interval:60
 }
+var data = '';
+post_data = JSON.stringify(post_data);
 
 var Request = function () {
     var options = {
         host: '172.25.50.214',
         port: 8080,
         method: 'post',
-        path: '/loan/getBlockHeight',
+        path: '/bs_platform/loan/getAvgTxPerBlock',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': Buffer.byteLength(post_data)
+            'Content-Type': 'application/json',
+            'Content-Length': post_data.length
         }
     }
 
@@ -26,9 +31,10 @@ var Request = function () {
             data += chunk;
         });
         res.on("end", function () {
+            //console.log(data);
             var json = JSON.parse(data);
-            if (json.Code == 'CF0000') {
-                console.log(json);
+            if (json.code == 'CF0000') {
+                console.log(json.avgTxPerBlocks);
             } else {
                 console.log(json.msg);
             }
@@ -41,3 +47,5 @@ var Request = function () {
     req.write(post_data);
     req.end();
 }
+
+Request();
