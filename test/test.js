@@ -6,8 +6,8 @@ var http = require("http");
 // }, 1000);
 var post_data = {
     channelId:"ProdChannel1",
-    timeStart:"20170619000000",
-    timeEnd:"20170619160000",
+    timeStart:"20170619140000",
+    timeEnd:"20170619150000",
     interval:60
 }
 var data = '';
@@ -34,7 +34,7 @@ var Request = function () {
             //console.log(data);
             var json = JSON.parse(data);
             if (json.code == 'CF0000') {
-                console.log(json.avgTxPerBlocks);
+                console.log(json.avgTxPerBlocks[0].txPerBlock);
             } else {
                 console.log(json.msg);
             }
