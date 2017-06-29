@@ -6,7 +6,7 @@ var http = require("http");
 // }, 1000);
 var post_data = {
     channelId:"ProdChannel1",
-    timeStart:"20170619140000",
+    timeStart:"20170619000000",
     timeEnd:"20170619150000",
     interval:60
 }
@@ -18,7 +18,7 @@ var Request = function () {
         host: '172.25.50.214',
         port: 8080,
         method: 'post',
-        path: '/bs_platform/loan/getAvgTxPerBlock',
+        path: '/bs_platform/loan/getBlockCount',
         headers: {
             'Content-Type': 'application/json',
             'Content-Length': post_data.length
@@ -34,7 +34,7 @@ var Request = function () {
             //console.log(data);
             var json = JSON.parse(data);
             if (json.code == 'CF0000') {
-                console.log(json.avgTxPerBlocks[0].txPerBlock);
+                console.log(json);
             } else {
                 console.log(json.msg);
             }
