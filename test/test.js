@@ -6,19 +6,19 @@ var http = require("http");
 // }, 1000);
 var post_data = {
     channelId:"ProdChannel1",
-    timeStart:"20170619000000",
-    timeEnd:"20170619150000",
-    interval:60
+    timeStart: '20170629160151',
+    timeEnd: '20170629170151',
+    interval: 60
 }
 var data = '';
 post_data = JSON.stringify(post_data);
 
 var Request = function () {
     var options = {
-        host: '172.25.50.214',
-        port: 8080,
+        host: '172.25.50.215',
+        port: 8765,
         method: 'post',
-        path: '/bs_platform/loan/getBlockCount',
+        path: '/bc_explorer/loan/getBlockCount',
         headers: {
             'Content-Type': 'application/json',
             'Content-Length': post_data.length
