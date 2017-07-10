@@ -57,7 +57,7 @@ wss.on('connection', function (ws) {
             } else {
                 //每秒循环一次所有的接口查询
                 var myInterval = setInterval(function () {
-                    logger.debug("start call api");
+                    // logger.debug("start call api");
                     //调用函数来查询各个接口，如有变化，则返回数据
                     CallApi.callApi(channelId, function (json) {
                         logger.info('app get: ' + JSON.stringify(json));
@@ -65,7 +65,7 @@ wss.on('connection', function (ws) {
                         //     logger.error(`[SERVER] error: ${err}`);
                         // });
                     });
-                }, 1000);
+                }, 2000);
             }
         });
     });
