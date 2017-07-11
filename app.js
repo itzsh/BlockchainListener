@@ -4,7 +4,7 @@ var WebSocket = require('ws');
 var log4js = require('log4js');
 var CallApi = require('./lib/callApi.js');
 const WebSocketServer = WebSocket.Server;
-var channelId;
+
 //配置log4js，配置两种选择，一种直接输出到控制台，一种打印到文本
 log4js.configure({
     appenders: [{
@@ -42,32 +42,39 @@ function socketverify(info) {
 
 wss.on('connection', function (ws) {
     logger.info(`[SERVER] connection()`);
-    ws.on('message', function (message) {
+    var channelId;   
+    
+    ws.on('message', (message) => {
         logger.info(`[SERVER] Received: ${message}`);
+        //channelId是通过前端传过来的
         try {
             channelId = JSON.parse(message).channelId;
         } catch (e) {
             logger.error(e);
             return;
         }
+    });
 
-        ws.send(`ECHO: ${message}`, (err) => {
-            if (err) {
-                logger.error(`[SERVER] error: ${err}`);
-            } else {
-                //每秒循环一次所有的接口查询
-                var myInterval = setInterval(function () {
-                    // logger.debug("start call api");
-                    //调用函数来查询各个接口，如有变化，则返回数据
-                    CallApi.callApi(channelId, function (json) {
-                        logger.info('app get: ' + JSON.stringify(json));
-                        // ws.send(JSON.stringify(json), (err) => {
-                        //     logger.error(`[SERVER] error: ${err}`);
-                        // });
-                    });
-                }, 2000);
-            }
+    var sid = setInterval(() => {
+        //调用函数来查询各个接口，如有变化，则返回数据
+        CallApi.getBlockInfo(channelId, (json) => {
+            logger.info('app get: ' + JSON.stringify(json));
+            ws.send(JSON.stringify(json));
         });
+    }, 2000);
+
+    var mid = setInterval(() => {
+        //调用函数来查询节点状态，如有变化，则返回数据
+        CallApi.getNodeInfo((json) => {
+            logger.info('app get: ' + JSON.stringify(json));
+            ws.send(JSON.stringify(json));
+        });
+    }, 60000);
+
+    ws.on('close', () => {
+        logger.info('stopping ws server');
+        clearInterval(sid);
+        clearInterval(mid);
     });
 });
 

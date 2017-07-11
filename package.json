@@ -1,6 +1,6 @@
 {
-  "name": "blockchain listener",
-  "version": "1.0.0",
+  "name": "blockchain-listener",
+  "version": "2.0.0",
   "description": "",
   "main": "app.js",
   "scripts": {},
