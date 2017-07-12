@@ -2,80 +2,84 @@
 
 var WebSocket = require('ws');
 var log4js = require('log4js');
+var config = require('./config/config.js');
 var CallApi = require('./lib/callApi.js');
 const WebSocketServer = WebSocket.Server;
 
-//配置log4js，配置两种选择，一种直接输出到控制台，一种打印到文本
-log4js.configure({
-    appenders: [{
-            type: 'console',
-            category: 'console'
-        },
-        {
-            type: 'file',
-            filename: './log/app.log',
-            category: 'appLogs'
-        }
-    ],
-    "replaceConsole": true,
-    "levels": {
-        "appLogs": "error",
-        "console": "debug"
-    }
-});
+// 配置log4js，配置两种选择，一种直接输出到控制台，一种打印到文本
+log4js.configure(config.appConfig);
 
 const logger = log4js.getLogger('console');
-const wss = new WebSocketServer({
-    host: 'localhost',
-    port: 9527,
-    //verifyClient: socketverify
-});
+const wss = new WebSocketServer(config.wsConfig);
 
-function socketverify(info) {
-    //做一些事情来验证连接合法性，如果允许连接则return true，否则return false
-    var origin = info.origin.match(/^(:?.+\:\/\/)([^\/]+)/);
-    if (origin.length >= 3 && origin[2] == "localhost:9527") {
-        return true;
-    }
-    return false;
-}
+// 创建连接池
+var clients = [];
 
-wss.on('connection', function (ws) {
+wss.on('connection', (ws) => {
+    // 将该连接加入连接池
+    var channelId, sid, mid;
+    clients.push(ws);
+
     logger.info(`[SERVER] connection()`);
-    var channelId;   
-    
     ws.on('message', (message) => {
         logger.info(`[SERVER] Received: ${message}`);
-        //channelId是通过前端传过来的
+        // channelId是通过前端传过来的
         try {
             channelId = JSON.parse(message).channelId;
         } catch (e) {
             logger.error(e);
             return;
         }
-    });
 
-    var sid = setInterval(() => {
-        //调用函数来查询各个接口，如有变化，则返回数据
-        CallApi.getBlockInfo(channelId, (json) => {
-            logger.info('app get: ' + JSON.stringify(json));
-            ws.send(JSON.stringify(json));
-        });
-    }, 2000);
-
-    var mid = setInterval(() => {
-        //调用函数来查询节点状态，如有变化，则返回数据
         CallApi.getNodeInfo((json) => {
             logger.info('app get: ' + JSON.stringify(json));
-            ws.send(JSON.stringify(json));
+            ws.send(JSON.stringify(json), (error) => {
+                if (error) logger.warn(error);
+                return;
+            });
         });
-    }, 60000);
+    });
+
+    // 保证只被调用一次
+    if (clients.length == 1) {
+        sid = setInterval(() => {
+            // 调用函数来查询各个接口，如有变化，则返回数据
+            CallApi.getBlockInfo(channelId, (json) => {
+                logger.info('app get: ' + JSON.stringify(json));
+                clients.forEach(function (socket) {
+                    socket.send(JSON.stringify(json), (error) => {
+                        if (error) logger.warn(error);
+                        return;
+                    });
+                });
+            });
+        }, 2000);
+
+        mid = setInterval(() => {
+            // 调用函数来查询节点状态，如有变化，则返回数据
+            CallApi.getNodeInfo((json) => {
+                logger.info('app get: ' + JSON.stringify(json));
+                clients.forEach(function (socket) {
+                    socket.send(JSON.stringify(json), (error) => {
+                        if (error) logger.warn(error);
+                        return;
+                    });
+                });
+            });
+        }, 60000);
+    }
 
     ws.on('close', () => {
-        logger.info('stopping ws server');
-        clearInterval(sid);
-        clearInterval(mid);
+        // 连接关闭时，将其移出连接池
+        clients = clients.filter(function (socket) {
+            return socket !== ws
+        });
+        // 当没有连接时，关闭定时查询
+        if (clients == []) {
+            clearInterval(sid);
+            clearInterval(mid);
+        }
     });
 });
 
-logger.info('Listening on http://localhost:9527');
+logger.info('Listening on port 8080');
